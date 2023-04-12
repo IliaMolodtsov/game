@@ -1,35 +1,73 @@
 import pygame
+from pygame.locals import *
+
+# Эта функция упрощает загрузку изображений
+def img(filename):
+    return pygame.image.load(f'images/{filename}')
 
 clock = pygame.time.Clock()  # Это часы на будущее, чтобы регулировать смену кадров движения привидения
 
 pygame.init()
 screen = pygame.display.set_mode((1099, 669))
 pygame.display.set_caption("proga")
-icon = pygame.image.load('images/Ghost-64.webp')
+icon = img('Ghost-64.webp')
 pygame.display.set_icon(icon)
 
 # АНИМАЦИЯ И ДВИЖЕНИЕ ГГ
 
 walk_right = [
-    pygame.image.load('images/player_right/player_right1.png'),
-    pygame.image.load('images/player_right/player_right2.png')
+    img('player_right/player_right1.png'),
+    img('player_right/player_right2.png')
 ]  # список из подключенных картинок привидения, идущего направо
 walk_left = [
-    pygame.image.load('images/player_left/player_left1.png'),
-    pygame.image.load('images/player_left/player_left2.png')
+    img('player_left/player_left1.png'),
+    img('player_left/player_left2.png')
 ]  # список из подключенных картинок привидения, идущего налево
 
 player_anim_count = 0  # счетчик-индекс для изображений в списке анимаций игрока
-player_speed = 10  # это будем отнимать и прибавлять к координатам по х, тем самым регулируя скорость игрок
+player_speed = 10  # это будем отнимать и прибавлять к координатам по х, тем самым регулируя скорость игрок1
 player_x = 150  # координаты игрока по х
 player_y = 540  # координаты игрока по y. Чем больше координаты, тем НИЖЕ ИГРОК. Чем меньше координаты, тем игрок ВЫШЕ.
 
 is_jump = False  # переменная для отслеживания прыжка
 jump_count = 10  # количество позиций, на которое мы будем поднимать игрока при прыжке (высота прыжка)
 
+player_lives = 5  # количество жизней игрока. Если игрок все жизни игра заканчивается
+
+# АНИМАЦИЯ И ДВИЖЕНИЕ ВРАГОВ
+
+enemy_land_left = [
+    img('enemy_land_left/enemy_land_left1.png'),
+    img('enemy_land_left/enemy_land_left2.png')
+]
+
+animation_speed = 10
+animation_stage = 0
+
+enemy_land_anim_count = 0
+enemy_land_x = 600
+enemy_land_y = 500
+
+enemy_sky_left = [
+    img('enemy_sky_left/enemy_sky_left1.png'),
+    img('enemy_sky_left/enemy_sky_left2.png'),
+    img('enemy_sky_left/enemy_sky_left3.png'),
+    img('enemy_sky_left/enemy_sky_left4.png'),
+    img('enemy_sky_left/enemy_sky_left5.png'),
+    img('enemy_sky_left/enemy_sky_left4.png'),
+    img('enemy_sky_left/enemy_sky_left3.png'),
+    img('enemy_sky_left/enemy_sky_left2.png')
+]
+
+enemy_sky_anim_speed = 3
+enemy_sky_anim_stage = 0
+
+enemy_sky_anim_count = 0
+enemy_sky_x = 800
+enemy_sky_y = 400
 
 # БЭКГРАУНД
-bg = pygame.image.load('images/pixel_bg.png')
+bg = img('pixel_bg.png')
 
 bg_x = 0
 
@@ -47,9 +85,36 @@ while running:
     if bg_x == -1099:
         bg_x = 0
 
+    # ВНЕДРЕНИЕ ВРАГОВ И НАСТРОЙКА ЕГО АНИМАЦИИ
+
+    # Наземный
+    screen.blit(enemy_land_left[enemy_land_anim_count], (enemy_land_x, enemy_land_y))
+    # Воздушный
+    screen.blit(enemy_sky_left[enemy_sky_anim_count], (enemy_sky_x, enemy_sky_y))
+
+    # строчки ниже - настройка индексов анимаций игрока
+    if animation_stage == animation_speed:
+        animation_stage = 0
+        if enemy_land_anim_count == 1:  # Обнуляем индекс, когда доходим до последнего элемента списка (чтобы не выйти за него)
+            enemy_land_anim_count = 0
+        else:
+            enemy_land_anim_count += 1  # каждый раз, заходя в цикл, будем увеличивать индекс, выводя поочередно все элементы
+    else:
+        animation_stage += 1
+
+    # строчки ниже - настройка индексов анимаций игрока
+    if enemy_sky_anim_stage == enemy_sky_anim_speed:
+        enemy_sky_anim_stage = 0
+        if enemy_sky_anim_count == 7:  # Обнуляем индекс, когда доходим до последнего элемента списка (чтобы не выйти за него)
+            enemy_sky_anim_count = 0
+        else:
+            enemy_sky_anim_count += 1  # каждый раз, заходя в цикл, будем увеличивать индекс, выводя поочередно все элементы
+    else:
+        enemy_sky_anim_stage += 1
+
     # ВНЕДРЕНИЕ ИГРОКА И НАСТРОЙКА ЕГО АНИМАЦИИ
 
-    player = pygame.image.load('images/player_right/player_right1.png')  # базовая картинка игрока
+    player = img('player_right/player_right1.png')  # базовая картинка игрока
     keys = pygame.key.get_pressed()  # Кнопка, на которую сейчас нажимает пользователь
     if keys[pygame.K_LEFT] or keys[pygame.K_a]:
         screen.blit(walk_left[player_anim_count], (player_x, player_y))
@@ -61,10 +126,14 @@ while running:
     else:
         screen.blit(player, (player_x, player_y))  # делаем такую картинку когда игрок стоит
     # строчки ниже - настройка индексов анимаций игрока
-    if player_anim_count == 1:  # Обнуляем индекс, когда доходим до последнего элемента списка (чтобы не выйти за него)
-        player_anim_count = 0
+    if animation_stage == animation_speed:
+        animation_stage = 0
+        if player_anim_count == 1:  # Обнуляем индекс, когда доходим до последнего элемента списка (чтобы не выйти за него)
+            player_anim_count = 0
+        else:
+            player_anim_count += 1  # каждый раз, заходя в цикл, будем увеличивать индекс, выводя поочередно все элементы
     else:
-        player_anim_count += 1  # каждый раз, заходя в цикл, будем увеличивать индекс, выводя поочередно все элементы
+        animation_stage += 1
 
     # НАСТРОЙКА ДВИЖЕНИЯ И ПРЫЖКА ИГРОКА
 
@@ -89,6 +158,25 @@ while running:
         else:  # если дошли до -10, то прыжок уже сделан, можно вернуть все параметры к старым значениям.
             is_jump = False
             jump_count = 10
+
+    player_hitbox = Rect(player_x, player_y, 26, 34)
+
+    # ВЫЯВЛЕНИЕ КОЛЛИЗИЙ ВРАГОВ И ИГРОКА
+
+    enemy_land_hitbox = Rect(enemy_land_x, enemy_land_y, 104, 88)
+    enemy_sky_hitbox = Rect(enemy_sky_x, enemy_sky_y + 49, 98, 44)
+
+    collision = Rect.colliderect(player_hitbox, enemy_land_hitbox)
+    collision = collision or Rect.colliderect(player_hitbox, enemy_sky_hitbox)
+
+    if collision:
+        player_lives -= 1
+        player_x = 150
+        player_y = 540
+        is_jump = False
+        jump_count = 10 
+
+    if player_lives == 0: running = False
 
     pygame.display.update()
 
