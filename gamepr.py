@@ -25,28 +25,45 @@ walk_left = [
 ]  # список из подключенных картинок привидения, идущего налево
 
 player_anim_count = 0  # счетчик-индекс для изображений в списке анимаций игрока
-player_speed = 10  # это будем отнимать и прибавлять к координатам по х, тем самым регулируя скорость игрок1
+player_speed = 10  # это будем отнимать и прибавлять к координатам по х, тем самым регулируя скорость игрока
 player_x = 150  # координаты игрока по х
 player_y = 540  # координаты игрока по y. Чем больше координаты, тем НИЖЕ ИГРОК. Чем меньше координаты, тем игрок ВЫШЕ.
+
+player_delay = 10  # количество кадров, через которое кадр анимации игрока сменяется
+player_delay_frame = 0  # количество кадров прошедших с момента последней смены кадра
 
 is_jump = False  # переменная для отслеживания прыжка
 jump_count = 10  # количество позиций, на которое мы будем поднимать игрока при прыжке (высота прыжка)
 
-player_lives = 5  # количество жизней игрока. Если игрок все жизни игра заканчивается
+player_lives = 5  # количество жизней игрока. Если игрок теряет все жизни, игра заканчивается
+invincible = 0  # длина периода неуязвимости после получения урона, измеряется в кадрах
 
-# АНИМАЦИЯ И ДВИЖЕНИЕ ВРАГОВ
+# АНИМАЦИЯ И ДВИЖЕНИЕ НАЗЕМНОГО ВРАГА
 
 enemy_land_left = [
     img('enemy_land_left/enemy_land_left1.png'),
     img('enemy_land_left/enemy_land_left2.png')
-]
+]  # список из подключенных картинок наземного врага, идущего налево
+enemy_land_right = [
+    img('enemy_land_right/enemy_land_right1.png'),
+    img('enemy_land_right/enemy_land_right2.png')
+]  # список из подключенных картинок наземного врага, идущего направо
 
-animation_speed = 10
-animation_stage = 0
+# список из которого по значению enemy_land_dir будет выбрана анимация
+# первый элемент пуст так как enemy_land_dir никогда не равна 0
+enemy_land_anim = [0, enemy_land_right, enemy_land_left]
 
-enemy_land_anim_count = 0
-enemy_land_x = 600
-enemy_land_y = 500
+enemy_land_delay = 2  # количество кадров, через которое кадр анимации наземного врага сменяется
+enemy_land_delay_frame = 0  # количество кадров прошедших с момента последней смены кадра
+
+enemy_land_speed = 2  # это будем отнимать и прибавлять к координатам по х, тем самым регулируя скорость наземного врага
+enemy_land_dir = -1  # направление наземного врага, при движении направо это 1, налево же -1 
+
+enemy_land_anim_count = 0  # счетчик-индекс для изображений в списке анимаций наземного врага
+enemy_land_x = 600  # координаты наземного врага по x
+enemy_land_y = 500  # координаты наземного врага по y
+
+# АНИМАЦИЯ И ДВИЖЕНИЕ ЛЕТАЮЩЕГО ВРАГА
 
 enemy_sky_left = [
     img('enemy_sky_left/enemy_sky_left1.png'),
@@ -57,14 +74,31 @@ enemy_sky_left = [
     img('enemy_sky_left/enemy_sky_left4.png'),
     img('enemy_sky_left/enemy_sky_left3.png'),
     img('enemy_sky_left/enemy_sky_left2.png')
-]
+] # список из подключенных картинок летающего врага, летящего налево
+enemy_sky_right = [
+    img('enemy_sky_right/enemy_sky_right1.png'),
+    img('enemy_sky_right/enemy_sky_right2.png'),
+    img('enemy_sky_right/enemy_sky_right3.png'),
+    img('enemy_sky_right/enemy_sky_right4.png'),
+    img('enemy_sky_right/enemy_sky_right5.png'),
+    img('enemy_sky_right/enemy_sky_right4.png'),
+    img('enemy_sky_right/enemy_sky_right3.png'),
+    img('enemy_sky_right/enemy_sky_right2.png')
+] # список из подключенных картинок летающего врага, летящего направо
 
-enemy_sky_anim_speed = 3
-enemy_sky_anim_stage = 0
+# список из которого по значению enemy_sky_dir будет выбрана анимация
+# первый элемент пуст так как enemy_sky_dir никогда не равна 0
+enemy_sky_anim = [0, enemy_sky_right, enemy_sky_left]
 
-enemy_sky_anim_count = 0
-enemy_sky_x = 800
-enemy_sky_y = 400
+enemy_sky_delay = 3  # количество кадров, через которое кадр анимации летающего врага сменяется
+enemy_sky_delay_frame = 0  # количество кадров прошедших с момента последней смены кадра
+
+enemy_sky_speed = 4  # это будем отнимать и прибавлять к координатам по х, тем самым регулируя скорость летающего врага
+enemy_sky_dir = -1  # направление летающего врага, при движении направо это 1, налево же -1
+
+enemy_sky_anim_count = 0  # счетчик-индекс для изображений в списке анимаций летающего врага
+enemy_sky_x = 800  # координаты летающего врага по x
+enemy_sky_y = 400  # координаты летающего врага по y
 
 # БЭКГРАУНД
 bg = img('pixel_bg.png')
@@ -85,32 +119,46 @@ while running:
     if bg_x == -1099:
         bg_x = 0
 
-    # ВНЕДРЕНИЕ ВРАГОВ И НАСТРОЙКА ЕГО АНИМАЦИИ
+    # ВЫВОД ЖИЗНЕЙ ИГРОКА
 
-    # Наземный
-    screen.blit(enemy_land_left[enemy_land_anim_count], (enemy_land_x, enemy_land_y))
-    # Воздушный
-    screen.blit(enemy_sky_left[enemy_sky_anim_count], (enemy_sky_x, enemy_sky_y))
+    font = pygame.font.SysFont(None, 24)  # инициализация шрифта
+    lives_img = font.render(f'Жизни: {player_lives}', True, (0, 0, 0))  # рендер изображения
+    screen.blit(lives_img, (20, 20))  # вывод изображения на экран
 
-    # строчки ниже - настройка индексов анимаций игрока
-    if animation_stage == animation_speed:
-        animation_stage = 0
+    # ВНЕДРЕНИЕ ВРАГОВ, НАСТРОЙКА ИХ АНИМАЦИИ И ИХ ДВИЖЕНИЕ
+
+    # наземный враг ходит от одного края экрана к другому и обратно
+    enemy_land_x += enemy_land_speed * enemy_land_dir
+    if enemy_land_x not in range(0, 1099-104): enemy_land_dir = -enemy_land_dir
+
+    # летающий враг летит от одного края экрана к другому и обратно
+    enemy_sky_x += enemy_sky_speed * enemy_sky_dir
+    if enemy_sky_x not in range(0, 1099-98): enemy_sky_dir = -enemy_sky_dir
+
+    # наземный враг
+    screen.blit(enemy_land_anim[enemy_land_dir][enemy_land_anim_count], (enemy_land_x, enemy_land_y))
+    # летающий враг
+    screen.blit(enemy_sky_anim[enemy_sky_dir][enemy_sky_anim_count], (enemy_sky_x, enemy_sky_y))
+
+    # строчки ниже - настройка индексов анимаций наземного врага
+    if enemy_land_delay_frame == enemy_land_delay:  # проверяем количество прошедших кадров, чтобы понять, пора ли сменять кадр
+        enemy_land_delay_frame = 0
         if enemy_land_anim_count == 1:  # Обнуляем индекс, когда доходим до последнего элемента списка (чтобы не выйти за него)
             enemy_land_anim_count = 0
         else:
             enemy_land_anim_count += 1  # каждый раз, заходя в цикл, будем увеличивать индекс, выводя поочередно все элементы
     else:
-        animation_stage += 1
+        enemy_land_delay_frame += 1
 
-    # строчки ниже - настройка индексов анимаций игрока
-    if enemy_sky_anim_stage == enemy_sky_anim_speed:
-        enemy_sky_anim_stage = 0
+    # строчки ниже - настройка индексов анимаций летающего врага
+    if enemy_sky_delay_frame == enemy_sky_delay:  # проверяем количество прошедших кадров, чтобы понять, пора ли сменять кадр
+        enemy_sky_delay_frame = 0
         if enemy_sky_anim_count == 7:  # Обнуляем индекс, когда доходим до последнего элемента списка (чтобы не выйти за него)
             enemy_sky_anim_count = 0
         else:
             enemy_sky_anim_count += 1  # каждый раз, заходя в цикл, будем увеличивать индекс, выводя поочередно все элементы
     else:
-        enemy_sky_anim_stage += 1
+        enemy_sky_delay_frame += 1
 
     # ВНЕДРЕНИЕ ИГРОКА И НАСТРОЙКА ЕГО АНИМАЦИИ
 
@@ -126,14 +174,14 @@ while running:
     else:
         screen.blit(player, (player_x, player_y))  # делаем такую картинку когда игрок стоит
     # строчки ниже - настройка индексов анимаций игрока
-    if animation_stage == animation_speed:
-        animation_stage = 0
+    if player_delay_frame == player_delay:
+        player_delay_frame = 0
         if player_anim_count == 1:  # Обнуляем индекс, когда доходим до последнего элемента списка (чтобы не выйти за него)
             player_anim_count = 0
         else:
             player_anim_count += 1  # каждый раз, заходя в цикл, будем увеличивать индекс, выводя поочередно все элементы
     else:
-        animation_stage += 1
+        player_delay_frame += 1
 
     # НАСТРОЙКА ДВИЖЕНИЯ И ПРЫЖКА ИГРОКА
 
@@ -159,23 +207,30 @@ while running:
             is_jump = False
             jump_count = 10
 
-    player_hitbox = Rect(player_x, player_y, 26, 34)
-
     # ВЫЯВЛЕНИЕ КОЛЛИЗИЙ ВРАГОВ И ИГРОКА
 
+    # создаем хитбоксы или репрезентации форм игрока и врагов в виде простых в обращении прямоугольников
+    # для игрока и наземного врага хитбокс того же размера что и изображение,
+    # но у летающего монстра в хитбокс входит только тело и хвост
+    player_hitbox = Rect(player_x, player_y, 26, 34)
     enemy_land_hitbox = Rect(enemy_land_x, enemy_land_y, 104, 88)
     enemy_sky_hitbox = Rect(enemy_sky_x, enemy_sky_y + 49, 98, 44)
 
+    # выявляем коллизии хитбоксов, то есть пересечения прямугольника игрока с прямогугольниками врагов
     collision = Rect.colliderect(player_hitbox, enemy_land_hitbox)
     collision = collision or Rect.colliderect(player_hitbox, enemy_sky_hitbox)
 
-    if collision:
-        player_lives -= 1
-        player_x = 150
-        player_y = 540
-        is_jump = False
-        jump_count = 10 
+    # если выявлена коллизия, игрок теряет одну жизнь
+    # режим неуязвимости длится 20 кадров, в течение которых игрок не получает урон
+    # благодаря этому игрок не теряет все жизни, находясь в контакте с врагов лишь 5 кадров
+    if collision and not invincible:
+        # player_lives -= 1
+        invincible = 20
 
+    # учитываем кадр как часть периода неуязвимости
+    if invincible: invincible -= 1
+
+    # если жизни кончаются игра завершается
     if player_lives == 0: running = False
 
     pygame.display.update()
