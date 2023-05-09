@@ -150,6 +150,20 @@ enemy_land_anim_count = 0  # счетчик-индекс для изображе
 enemy_land_x = 600  # координаты наземного врага по x
 enemy_land_y = 500  # координаты наземного врага по y
 
+# АНИМАЦИЯ ГРИБА
+
+mushroom = [
+    img('mushroom/mushroom1.png'),
+    img('mushroom/mushroom2.png')
+]  # список из подключенных картинок гриба
+
+mushroom_delay = 3  # количество кадров, через которое кадр анимации наземного врага сменяется
+mushroom_delay_frame = 0  # количество кадров прошедших с момента последней смены кадра 
+
+mushroom_anim_count = 0  # счетчик-индекс для изображений в списке анимаций наземного врага
+mushroom_x = 700  # координаты наземного врага по x
+mushroom_y = 396  # координаты наземного врага по y
+
 
 # АНИМАЦИЯ И ДВИЖЕНИЕ БЕГУНА
 
@@ -259,6 +273,8 @@ while running:
 
     # наземный враг
     screen.blit(enemy_land_anim[enemy_land_dir][enemy_land_anim_count], (enemy_land_x, enemy_land_y))
+    # гриб
+    screen.blit(mushroom[mushroom_anim_count], (mushroom_x, mushroom_y))
     # бегун
     screen.blit(runner_anim[runner_dir][runner_anim_count], (runner_x, runner_y))
     # летающий враг
@@ -273,6 +289,16 @@ while running:
             enemy_land_anim_count += 1  # каждый раз, заходя в цикл, будем увеличивать индекс, выводя поочередно все элементы
     else:
         enemy_land_delay_frame += 1
+
+    # строчки ниже - настройка индексов анимаций гриба
+    if mushroom_delay_frame == mushroom_delay:  # проверяем количество прошедших кадров, чтобы понять, пора ли сменять кадр
+        mushroom_delay_frame = 0
+        if mushroom_anim_count == 1:  # Обнуляем индекс, когда доходим до последнего элемента списка (чтобы не выйти за него)
+            mushroom_anim_count = 0
+        else:
+            mushroom_anim_count += 1  # каждый раз, заходя в цикл, будем увеличивать индекс, выводя поочередно все элементы
+    else:
+        mushroom_delay_frame += 1
 
     # строчки ниже - настройка индексов анимаций бегуна
     if runner_delay_frame == runner_delay:  # проверяем количество прошедших кадров, чтобы понять, пора ли сменять кадр
@@ -377,12 +403,14 @@ while running:
     # но у летающего монстра в хитбокс входит только тело и хвост
     player_hitbox = Rect(player_x, player_y, 26, 34)
     enemy_land_hitbox = Rect(enemy_land_x, enemy_land_y, 104, 88)
+    mushroom_hitbox = Rect(mushroom_x, mushroom_y, 78, 64)
     runner_hitbox = Rect(runner_x, runner_y, 68, 61)
     enemy_sky_hitbox = Rect(enemy_sky_x, enemy_sky_y + 49, 98, 44)
 
     # выявляем коллизии хитбоксов, то есть пересечения прямугольника игрока с прямогугольниками врагов
     collision = Rect.colliderect(player_hitbox, enemy_land_hitbox)
-    collision = Rect.colliderect(player_hitbox, runner_hitbox)
+    collision = collision or Rect.colliderect(player_hitbox, mushroom_hitbox)
+    collision = collision or Rect.colliderect(player_hitbox, runner_hitbox)
     collision = collision or Rect.colliderect(player_hitbox, enemy_sky_hitbox)
 
     # если выявлена коллизия, игрок теряет одну жизнь
@@ -412,8 +440,11 @@ while running:
             if el.colliderect(enemy_land_hitbox):  # при столкновении пули и монстра
                 enemy_land_x = -500  # монстр помещается за пределы экрана
                 bullets.pop(i)  # пуля убирается
+            if el.colliderect(mushroom_hitbox):
+                mushroom_x = -500
+                bullets.pop(i)
             if el.colliderect(runner_hitbox):
-                enemy_sky_x = -500
+                enemy_runner_x = -500
                 bullets.pop(i)
             if el.colliderect(enemy_sky_hitbox):
                 enemy_sky_x = -500
