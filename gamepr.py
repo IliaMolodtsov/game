@@ -1,17 +1,14 @@
 import pygame
 from pygame.locals import *
 
-
 # Эта функция упрощает загрузку изображений
 def img(filename):
     return pygame.image.load(f'images/{filename}')
-
 
 # Эта функция возвращает знак числа
 # (Имплементирована, чтобы не импортировать лишних модулей)
 def sign(number):
     return -1 * (number >= 0)
-
 
 clock = pygame.time.Clock()  # Это часы на будущее, чтобы регулировать смену кадров движения привидения
 
@@ -153,7 +150,9 @@ enemy_land_anim_count = 0  # счетчик-индекс для изображе
 enemy_land_x = 600  # координаты наземного врага по x
 enemy_land_y = 500  # координаты наземного врага по y
 
+
 # АНИМАЦИЯ И ДВИЖЕНИЕ БЕГУНА
+
 
 runner_left = [
     img('runner_left/runner_left_1.png'),
@@ -188,7 +187,7 @@ enemy_sky_left = [
     img('enemy_sky_left/enemy_sky_left4.png'),
     img('enemy_sky_left/enemy_sky_left3.png'),
     img('enemy_sky_left/enemy_sky_left2.png')
-]  # список из подключенных картинок летающего врага, летящего налево
+] # список из подключенных картинок летающего врага, летящего налево
 enemy_sky_right = [
     img('enemy_sky_right/enemy_sky_right1.png'),
     img('enemy_sky_right/enemy_sky_right2.png'),
@@ -198,7 +197,7 @@ enemy_sky_right = [
     img('enemy_sky_right/enemy_sky_right4.png'),
     img('enemy_sky_right/enemy_sky_right3.png'),
     img('enemy_sky_right/enemy_sky_right2.png')
-]  # список из подключенных картинок летающего врага, летящего направо
+] # список из подключенных картинок летающего врага, летящего направо
 
 # список из которого по значению enemy_sky_dir будет выбрана анимация
 # первый элемент пуст так как enemy_sky_dir никогда не равна 0
@@ -215,7 +214,7 @@ enemy_sky_x = 800  # координаты летающего врага по x
 enemy_sky_y = 400  # координаты летающего врага по y
 
 # БЭКГРАУНД
-bg = img('backgrounds/pixel_bg.png')
+bg = img('pixel_bg.png')
 
 bg_x = 0
 
@@ -266,40 +265,32 @@ while running:
     screen.blit(enemy_sky_anim[enemy_sky_dir][enemy_sky_anim_count], (enemy_sky_x, enemy_sky_y))
 
     # строчки ниже - настройка индексов анимаций наземного врага
-    if enemy_land_delay_frame == enemy_land_delay:
-        # проверяем количество прошедших кадров, чтобы понять, пора ли сменять кадр
+    if enemy_land_delay_frame == enemy_land_delay:  # проверяем количество прошедших кадров, чтобы понять, пора ли сменять кадр
         enemy_land_delay_frame = 0
-        if enemy_land_anim_count == 1:
+        if enemy_land_anim_count == 1:  # Обнуляем индекс, когда доходим до последнего элемента списка (чтобы не выйти за него)
             enemy_land_anim_count = 0
-            # Обнуляем индекс, когда доходим до последнего элемента списка (чтобы не выйти за него)
         else:
-            enemy_land_anim_count += 1
-            # каждый раз, заходя в цикл, будем увеличивать индекс, выводя поочередно все элементы
+            enemy_land_anim_count += 1  # каждый раз, заходя в цикл, будем увеличивать индекс, выводя поочередно все элементы
     else:
         enemy_land_delay_frame += 1
 
     # строчки ниже - настройка индексов анимаций бегуна
     if runner_delay_frame == runner_delay:  # проверяем количество прошедших кадров, чтобы понять, пора ли сменять кадр
         runner_delay_frame = 0
-        if runner_anim_count == 1:
+        if runner_anim_count == 1:  # Обнуляем индекс, когда доходим до последнего элемента списка (чтобы не выйти за него)
             runner_anim_count = 0
-            # Обнуляем индекс, когда доходим до последнего элемента списка (чтобы не выйти за него)
         else:
-            runner_anim_count += 1
-            # каждый раз, заходя в цикл, будем увеличивать индекс, выводя поочередно все элементы
+            runner_anim_count += 1  # каждый раз, заходя в цикл, будем увеличивать индекс, выводя поочередно все элементы
     else:
         runner_delay_frame += 1
 
     # строчки ниже - настройка индексов анимаций летающего врага
-    if enemy_sky_delay_frame == enemy_sky_delay:
-        # проверяем количество прошедших кадров, чтобы понять, пора ли сменять кадр
+    if enemy_sky_delay_frame == enemy_sky_delay:  # проверяем количество прошедших кадров, чтобы понять, пора ли сменять кадр
         enemy_sky_delay_frame = 0
-        if enemy_sky_anim_count == 7:
+        if enemy_sky_anim_count == 7:  # Обнуляем индекс, когда доходим до последнего элемента списка (чтобы не выйти за него)
             enemy_sky_anim_count = 0
-            # Обнуляем индекс, когда доходим до последнего элемента списка (чтобы не выйти за него)
         else:
-            enemy_sky_anim_count += 1
-            # каждый раз, заходя в цикл, будем увеличивать индекс, выводя поочередно все элементы
+            enemy_sky_anim_count += 1  # каждый раз, заходя в цикл, будем увеличивать индекс, выводя поочередно все элементы
     else:
         enemy_sky_delay_frame += 1
 
@@ -324,12 +315,10 @@ while running:
     # строчки ниже - настройка индексов анимаций игрока
     if player_delay_frame == player_delay:
         player_delay_frame = 0
-        if player_anim_count == 1:
+        if player_anim_count == 1:  # Обнуляем индекс, когда доходим до последнего элемента списка (чтобы не выйти за него)
             player_anim_count = 0
-            # Обнуляем индекс, когда доходим до последнего элемента списка (чтобы не выйти за него)
         else:
-            player_anim_count += 1
-            # каждый раз, заходя в цикл, будем увеличивать индекс, выводя поочередно все элементы
+            player_anim_count += 1  # каждый раз, заходя в цикл, будем увеличивать индекс, выводя поочередно все элементы
     else:
         player_delay_frame += 1
 
@@ -398,14 +387,14 @@ while running:
 
     # если выявлена коллизия, игрок теряет одну жизнь
     # режим неуязвимости длится 20 кадров, в течение которых игрок не получает урон
-    # благодаря этому игрок не теряет все жизни, находясь в контакте с врагом лишь 5 кадров
+    # благодаря этому игрок не теряет все жизни, находясь в контакте с врагов лишь 5 кадров
     if collision and not invincible:
-        player_lives -= 1
+        # player_lives -= 1
         invincible = 20
 
     # учитываем кадр как часть периода неуязвимости
-    if invincible:
-        invincible -= 1
+    if invincible: invincible -= 1
+
 
     # СТРЕЛЬБА
 
@@ -431,13 +420,7 @@ while running:
                 bullets.pop(i)
 
     # если жизни кончаются игра завершается
-    if player_lives == 0:
-        running = False
-
-    if keys[pygame.K_ESCAPE]:
-        starting = False  # если человек нажимает escape, то starting прекращает работать и тем самым
-        # позволяет нам вернуться в меню.
-        menu()
+    if player_lives == 0: running = False
 
     pygame.display.update()
 
