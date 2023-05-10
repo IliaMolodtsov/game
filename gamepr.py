@@ -403,7 +403,7 @@ while running:
     # но у летающего монстра в хитбокс входит только тело и хвост
     player_hitbox = Rect(player_x, player_y, 26, 34)
     enemy_land_hitbox = Rect(enemy_land_x, enemy_land_y, 104, 88)
-    mushroom_hitbox = Rect(mushroom_x, mushroom_y, 78, 64)
+    mushroom_hitbox = Rect(mushroom_x, mushroom_y, 234, 192)
     runner_hitbox = Rect(runner_x, runner_y, 68, 61)
     enemy_sky_hitbox = Rect(enemy_sky_x, enemy_sky_y + 49, 98, 44)
 
@@ -411,13 +411,13 @@ while running:
     collision = Rect.colliderect(player_hitbox, enemy_land_hitbox)
     collision = collision or Rect.colliderect(player_hitbox, mushroom_hitbox)
     collision = collision or Rect.colliderect(player_hitbox, runner_hitbox)
-    collision = collision or Rect.colliderect(player_hitbox, enemy_sky_hitbox)
+    collision = collision or Rect.collide.rect(player_hitbox, enemy_sky_hitbox)
 
     # если выявлена коллизия, игрок теряет одну жизнь
     # режим неуязвимости длится 20 кадров, в течение которых игрок не получает урон
     # благодаря этому игрок не теряет все жизни, находясь в контакте с врагов лишь 5 кадров
     if collision and not invincible:
-        # player_lives -= 1
+        player_lives -= 1
         invincible = 20
 
     # учитываем кадр как часть периода неуязвимости
