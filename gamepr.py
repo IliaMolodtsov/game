@@ -411,7 +411,7 @@ while running:
     collision = Rect.colliderect(player_hitbox, enemy_land_hitbox)
     collision = collision or Rect.colliderect(player_hitbox, mushroom_hitbox)
     collision = collision or Rect.colliderect(player_hitbox, runner_hitbox)
-    collision = collision or Rect.collide.rect(player_hitbox, enemy_sky_hitbox)
+    collision = collision or Rect.colliderect(player_hitbox, enemy_sky_hitbox)
 
     # если выявлена коллизия, игрок теряет одну жизнь
     # режим неуязвимости длится 20 кадров, в течение которых игрок не получает урон
