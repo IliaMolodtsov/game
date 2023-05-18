@@ -5,14 +5,14 @@ pygame.init()
 clock = pygame.time.Clock()
 FPS = 60
 
-#create game window
+#create game_draft window
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 432
 
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Parallax")
 
-#define game variables
+#define game_draft variables
 scroll = 0
 
 ground_image = pygame.image.load("images\parallax\ground.png").convert_alpha()
@@ -36,7 +36,7 @@ def draw_ground():
   for x in range(3000):
     screen.blit(ground_image, ((x * ground_width) - scroll * 2.5, SCREEN_HEIGHT - ground_height))
 
-#game loop
+#game_draft loop
 run = True
 while run:
 
