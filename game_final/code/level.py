@@ -1,56 +1,115 @@
 import pygame
-from tiles import Tile
-from settings import tile_size
+from support import import_csv_layout, import_cut_graphics
+from settings import tile_size, screen_height, screen_width
+from tiles import Tile, StaticTile, Coin
+from enemy import *
 from player import Player
+from decoration import Forest
 
 
 class Level:
-    def __init__(self, level_data, surface):
+    def __init__(self, level_data, surface):  # информация об уровне
 
-        # настройки уровня
+        # общие настройки
         self.display_surface = surface
-        self.setup_level(level_data)
-        self.world_shift = 0  # переменная для движения карты
-        self.current_x = 0
+        self.world_shift = 0  # интенсивность скроллинга
+        self.current_x = None
 
-    def setup_level(self, layout):
-        self.tiles = pygame.sprite.Group()  # группа для блоков
-        self.player = pygame.sprite.GroupSingle()  # группа для игрока
+        # игрок в начале и в конце уровня
+        player_layout = import_csv_layout(level_data['player'])
+        self.player = pygame.sprite.GroupSingle()
+        self.goal = pygame.sprite.GroupSingle()
+        self.player_setup(player_layout)
+
+        # фон
+        self.forest = Forest()
+
+        # настройка местности
+        terrain_layout = import_csv_layout(level_data['terrain'])
+        self.terrain_sprites = self.create_tile_group(terrain_layout, 'terrain')
+
+        # настройка травы
+        grass_layout = import_csv_layout(level_data['grass'])
+        self.grass_sprites = self.create_tile_group(grass_layout, 'grass')
+
+        # монеты
+        coin_layout = import_csv_layout(level_data['coins'])
+        self.coin_sprites = self.create_tile_group(coin_layout, 'coins')
+
+        # враги
+        enemy_layout = import_csv_layout(level_data['enemies'])
+        self.enemy_sprites = self.create_tile_group(enemy_layout, 'enemies')
+
+        # ограничения для врагов (чтобы меняли траекторию движения, натыкаясь на них)
+        constraint_layout = import_csv_layout(level_data['constraints'])
+        self.constraint_sprites = self.create_tile_group(constraint_layout, 'constraint')
+
+    def create_tile_group(self, layout, type):
+        sprite_group = pygame.sprite.Group()
+
         for row_index, row in enumerate(layout):
-            for col_index, cell in enumerate(row):  # цикл для перебора всех элементов карты уровня
+            for col_index, val in enumerate(row):
+                if val != '-1':
+                    x = col_index * tile_size
+                    y = row_index * tile_size
+
+                    if type == 'terrain':
+                        terrain_tile_list = import_cut_graphics('../graphics/terrain/terrain_tiles.png')
+                        # у каждого элемента такой же индекс в списке, как и ID в программе Tiled. Поэтому:
+                        tile_surface = terrain_tile_list[int(val)]  # берем соответствующий тайл в завис-ти от числа
+                        sprite = StaticTile(tile_size, x, y, tile_surface)
+
+                    if type == 'grass':  # делаем то же самое с травой
+                        grass_tile_list = import_cut_graphics('../graphics/grass/grass.png')
+                        tile_surface = grass_tile_list[int(val)]
+                        sprite = StaticTile(tile_size, x, y, tile_surface)
+
+                    if type == 'coins':
+                        sprite = Coin(tile_size, x, y, '../graphics/coins/gold')
+
+                    if type == 'enemies':  # Каждому ID врага из Tiled приписываем соотв класс с соотв изображениями
+                        if val == '0':
+                            sprite = Black(tile_size, x, y)
+                        # Например, если ID = 0 (а в Tiled черный враг имеет ID = 0), то мы используем класс, который
+                        # ведёт к папке с изображениями черного врага. С остальными врагами всё аналогично.
+                        if val == '2':
+                            sprite = Green(tile_size, x, y)
+                        if val == '3':
+                            sprite = Mushroom(tile_size, x, y)
+                        if val == '4':
+                            sprite = Red(tile_size, x, y)
+
+                    if type == 'constraint':
+                        sprite = Tile(tile_size, x, y)
+
+                    sprite_group.add(sprite)
+
+        return sprite_group
+
+    def player_setup(self, layout):
+        for row_index, row in enumerate(layout):
+            for col_index, val in enumerate(row):
                 x = col_index * tile_size
-                y = row_index * tile_size  # координаты, в которых будут находиться выводимые объекты
+                y = row_index * tile_size
+                if val == '0':
+                    sprite = Player((x, y))
+                    self.player.add(sprite)
+                if val == '1':
+                    diamond_surface = pygame.image.load('../graphics/player/diamond.png').convert_alpha()
+                    sprite = StaticTile(tile_size, x, y, diamond_surface)
+                    self.goal.add(sprite)
 
-                if cell == 'X':  # если элемент в карте уровня X
-
-                    tile = Tile((x, y), tile_size)  # плитка с нужными координатами и размером
-                    self.tiles.add(tile)  # в группу для блоков добавляется эта плитка
-                if cell == 'P':  # если элемент в карте уровня P
-                    player_sprite = Player((x, y))  # игрок с нужными координатами
-                    self.player.add(player_sprite)  # в группу для игрока добавляется этот игрок
-
-    # движение игрока
-    def scroll_x(self):
-        player = self.player.sprite
-        player_x = player.rect.centerx  # положение игрока
-        direction_x = player.direction.x  # направление движения игрока
-
-        if player_x < 200 and direction_x < 0:  # граница, за которой вместо движения игрока влево движется карта уровня
-            self.world_shift = 8  # скорость движения карты уровня
-            player.speed = 0  # скорость движения игрока
-        elif player_x > 1050 and direction_x > 0:  # граница, за которой игрок не движется, движется карта уровня
-            self.world_shift = -8
-            player.speed = 0
-        else:
-            self.world_shift = 0  # в других случаях игрок двигается
-            player.speed = 8
+    def enemy_collision_reverse(self):  # чтобы враги могли ударяться о невидимые блоки, меняющие траекторию их движения
+        for enemy in self.enemy_sprites.sprites():
+            if pygame.sprite.spritecollide(enemy, self.constraint_sprites, False):
+                enemy.reverse()
 
     # работа с горизонтальными коллизиями
     def horizontal_movement_collision(self):
         player = self.player.sprite
-        player.rect.x += player.direction.x * player.speed    # обновление позиции - изменение координаты по горизонтали
+        player.rect.x += player.direction.x * player.speed  # обновление позиции - изменение координаты по горизонтали
 
-        for sprite in self.tiles.sprites():
+        for sprite in self.terrain_sprites.sprites():
             if sprite.rect.colliderect(player.rect):  # проверка коллизий блоков и игрока
                 if player.direction.x < 0:  # если игрок двигается влево
                     player.rect.left = sprite.rect.right  # его левая координата остаётся равной правой координате блока
@@ -71,7 +130,7 @@ class Level:
         player = self.player.sprite
         player.apply_gravity()
 
-        for sprite in self.tiles.sprites():
+        for sprite in self.terrain_sprites.sprites():
             if sprite.rect.colliderect(player.rect):  # проверка коллизий блоков и игрока
                 if player.direction.y > 0:  # если игрок двигается вниз
                     player.rect.bottom = sprite.rect.top  # нижняя координата остаётся равной верхней координате блока
@@ -86,16 +145,55 @@ class Level:
         if player.on_ceiling and (player.direction.y < 0 or player.direction.y > 0):
             player.on_ceiling = False  # игрок больше не касается блока сверху
 
-    # вывод всего на экран
-    def run(self):
+    # движение игрока (скроллинг)
+    def scroll_x(self):
+        player = self.player.sprite
+        player_x = player.rect.centerx  # положение игрока
+        direction_x = player.direction.x  # направление движения игрока
 
-        # блоки
-        self.tiles.update(self.world_shift)
-        self.tiles.draw(self.display_surface)
-        self.scroll_x()
+        if player_x < 200 and direction_x < 0:  # граница, за которой вместо движения игрока влево движется карта уровня
+            self.world_shift = 8  # скорость движения карты уровня
+            player.speed = 0  # скорость движения игрока
+        elif player_x > 1050 and direction_x > 0:  # граница, за которой игрок не движется, движется карта уровня
+            self.world_shift = -8
+            player.speed = 0
+        else:
+            self.world_shift = 0  # в других случаях игрок двигается
+            player.speed = 8
 
-        # игрок
+    def run(self):  # мы будем запускать всю игру с помощью этой функции
+        # Строчки, которые расположены ниже, накладываются на строчки, расположенные выше.
+        # Таким образом, враги накладываются на местность, трава - на врагов и на местность, и т.п.
+
+        # фон
+        self.forest.update(self.world_shift)
+        self.forest.draw(self.display_surface)
+
+        # местность
+        self.terrain_sprites.update(self.world_shift)  # скорость скроллинга
+        self.terrain_sprites.draw(self.display_surface)
+
+        # враги
+        self.enemy_sprites.update(self.world_shift)
+        self.constraint_sprites.update(self.world_shift)
+        self.enemy_collision_reverse()
+        self.enemy_sprites.draw(self.display_surface)
+
+        # трава
+        self.grass_sprites.update(self.world_shift)
+        self.grass_sprites.draw(self.display_surface)
+
+        # монеты
+        self.coin_sprites.update(self.world_shift)
+        self.coin_sprites.draw(self.display_surface)
+
+        # настройки игрока
         self.player.update()
         self.horizontal_movement_collision()
         self.vertical_movement_collision()
+        self.scroll_x()
         self.player.draw(self.display_surface)
+        self.goal.update(self.world_shift)
+        self.goal.draw(self.display_surface)
+
+

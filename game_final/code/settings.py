@@ -1,16 +1,5 @@
-level_map = [
-    '                                                      ',
-    '                                                      ',
-    '    XXXX       XXXXX                                  ',
-    ' P                                                    ',
-    'XX     XXXXXX           XXXXX          XXXXX          ',
-    'XX     XXXXXX      XXXXXXXXXX          XXXXX          ',
-    'XXXX   XXXXXX      XXXXXXXXXX          XXXXX          ',
-    '       XXXXXX                       XXXXXXXX          ',
-    '               XXXXXX        XXXXXX           XXXXXXX ',
-    '   XXXXXX    XXXXX          XXX             XXXXXX    ',
-    'XXXXXXXXX                   XXXXXX       XXXXXX       '
-]
+vertical_tile_number = 11
 tile_size = 64
-screen_height = len(level_map) * tile_size  # высота делается такой, чтобы весь экран был покрыт плитками
-screen_width = 1250
+
+screen_height = vertical_tile_number * tile_size
+screen_width = 1200
