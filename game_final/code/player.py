@@ -1,9 +1,10 @@
 import pygame
 from support import import_folder
+from math import sin
 
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self, pos):
+    def __init__(self, pos, change_health):
         super().__init__()
         self.import_character_assets()
         self.frame_index = 0
@@ -13,9 +14,9 @@ class Player(pygame.sprite.Sprite):
 
         # движение персонажа
         self.direction = pygame.math.Vector2(0, 0)  # направление движения с помощью вектора
-        self.speed = 8  # скорость персонажа
+        self.speed = 5  # скорость персонажа
         self.gravity = 0.8  # значение гравитации
-        self.jump_speed = -16  # начальная величина прыжка
+        self.jump_speed = -20  # начальная величина прыжка
 
         # положение игрока
         self.status = 'player_right'
@@ -25,6 +26,11 @@ class Player(pygame.sprite.Sprite):
         self.on_left = False
         self.on_right = False
 
+        # управление изменением шкалы жизни
+        self.invincible = False
+        self.invincibility_duration = 500
+        self.hurt_time = 0
+
     def import_character_assets(self):
         character_path = '../graphics/player/'
         self.animations = {'player_right': [], 'player_left': []}  # словарь с изображениями из папки
@@ -33,8 +39,14 @@ class Player(pygame.sprite.Sprite):
             full_path = character_path + animation  # путь к файлу
             self.animations[animation] = import_folder(full_path)  # получаем название файла внутри данной папки
 
-    def animate(self):
+    def animate(self):  # отслеживаем мигание игрока при встрече с врагами
         animation = self.animations[self.status]  # берётся одна папка с картинками
+
+        if self.invincible:
+            alpha = self.wave_value()
+            self.image.set_alpha(alpha)
+        else:
+            self.image.set_alpha(255)
 
         # изменение frame_index
         if self.direction.x != 0:  # нужно только когда происходит движение вправо или влево
@@ -88,7 +100,30 @@ class Player(pygame.sprite.Sprite):
     def jump(self):
         self.direction.y = self.jump_speed
 
+    def get_damage(self):  # повреждения
+        if not self.invincible:
+            self.invincible = True
+            self.hurt_time = pygame.time.get_ticks()
+            return -1
+        else:
+            return 0
+
+    def invincibility_timer(self):  # мигание
+        if self.invincible:
+            current_time = pygame.time.get_ticks()
+            if current_time - self.hurt_time >= self.invincibility_duration:
+                self.invincible = False
+
+    def wave_value(self):
+        value = sin(pygame.time.get_ticks())
+        if value >= 0:
+            return 255
+        else:
+            return 0
+
     def update(self):
         self.get_input()
         self.get_status()
         self.animate()
+        self.invincibility_timer()
+        self.wave_value()

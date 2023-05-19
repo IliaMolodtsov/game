@@ -5,4 +5,3 @@ level_0 = {
     'constraints': '../levels/0/level_0_constraints.csv',
     'player': '../levels/0/level_0_player.csv',
     'grass': '../levels/0/level_0_grass.csv'}
-

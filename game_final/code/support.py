@@ -41,4 +41,3 @@ def import_cut_graphics(path):  # функция для разрезки тай�
             cut_tiles.append(new_surf)
 
     return cut_tiles
-

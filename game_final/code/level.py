@@ -1,14 +1,16 @@
 import pygame
+import os
 from support import import_csv_layout, import_cut_graphics
 from settings import tile_size, screen_height, screen_width
 from tiles import Tile, StaticTile, Coin
 from enemy import *
 from player import Player
+from particles import ParticleEffect
 from decoration import Forest
 
 
 class Level:
-    def __init__(self, level_data, surface):  # информация об уровне
+    def __init__(self, level_data, surface, change_coins, change_health):  # информация об уровне
 
         # общие настройки
         self.display_surface = surface
@@ -19,7 +21,16 @@ class Level:
         player_layout = import_csv_layout(level_data['player'])
         self.player = pygame.sprite.GroupSingle()
         self.goal = pygame.sprite.GroupSingle()
-        self.player_setup(player_layout)
+        self.player_setup(player_layout, change_health)
+
+        # user interface
+        self.max_level = 2  # сначала доступно 3 уровня
+        self.max_health = 100  # максимальный процент жизни
+        self.cur_health = 100  # процент жизни
+        self.coins = 0  # количество монет
+
+        # explosion particles
+        self.explosion_sprites = pygame.sprite.Group()  # добавляем взрывы, когда герой сталкивается с врагом
 
         # фон
         self.forest = Forest()
@@ -86,13 +97,13 @@ class Level:
 
         return sprite_group
 
-    def player_setup(self, layout):
+    def player_setup(self, layout, change_health):
         for row_index, row in enumerate(layout):
             for col_index, val in enumerate(row):
                 x = col_index * tile_size
                 y = row_index * tile_size
                 if val == '0':
-                    sprite = Player((x, y))
+                    sprite = Player((x, y), change_health)
                     self.player.add(sprite)
                 if val == '1':
                     diamond_surface = pygame.image.load('../graphics/player/diamond.png').convert_alpha()
@@ -151,15 +162,54 @@ class Level:
         player_x = player.rect.centerx  # положение игрока
         direction_x = player.direction.x  # направление движения игрока
 
-        if player_x < 200 and direction_x < 0:  # граница, за которой вместо движения игрока влево движется карта уровня
-            self.world_shift = 8  # скорость движения карты уровня
+        if player_x < 400 and direction_x < 0:  # граница, за которой вместо движения игрока влево движется карта уровня
+            self.world_shift = 5  # скорость движения карты уровня
             player.speed = 0  # скорость движения игрока
-        elif player_x > 1050 and direction_x > 0:  # граница, за которой игрок не движется, движется карта уровня
-            self.world_shift = -8
+        elif player_x > 650 and direction_x > 0:  # граница, за которой игрок не движется, движется карта уровня
+            self.world_shift = -5
             player.speed = 0
         else:
             self.world_shift = 0  # в других случаях игрок двигается
-            player.speed = 8
+            player.speed = 5
+
+    def check_death(self):
+        game_active = True
+        if self.player.sprite.rect.top > screen_height or self.cur_health <= 0:
+            game_active = False
+        return game_active
+
+    def check_win(self):
+        win = False
+        if pygame.sprite.spritecollide(self.player.sprite, self.goal, False):
+            win = True
+        return win
+
+    def check_coin_collisions(self):  # смотрим на то, поймал ли герой монету
+        collided_coins = pygame.sprite.spritecollide(self.player.sprite, self.coin_sprites, True)
+        if collided_coins:
+            for coin in collided_coins:
+                self.change_coins(1)
+
+    def change_coins(self, amount):  # меняем количество монет
+        self.coins += amount
+
+    def check_enemy_collisions(self):  # смотрим на то, столкнулся ли герой с врагом
+        enemy_collisions = pygame.sprite.spritecollide(self.player.sprite, self.enemy_sprites, False)
+
+        if enemy_collisions:  # если герой задевает врага сверху
+            for enemy in enemy_collisions:
+                enemy_center = enemy.rect.centery
+                enemy_top = enemy.rect.top
+                player_bottom = self.player.sprite.rect.bottom
+                if enemy_top < player_bottom < enemy_center and self.player.sprite.direction.y >= 0:  # проверяем, что
+                    self.player.sprite.direction.y = -15  # герой двигается вниз и касается нижней своей частью
+                    # верхней части врага
+                    enemy.kill()
+                else:
+                    self.change_health(self.player.sprite.get_damage())  # если герой задевает врага сбоку
+
+    def change_health(self, amount):  # меняем уровень жизни
+        self.cur_health += 16 * amount
 
     def run(self):  # мы будем запускать всю игру с помощью этой функции
         # Строчки, которые расположены ниже, накладываются на строчки, расположенные выше.
@@ -178,6 +228,8 @@ class Level:
         self.constraint_sprites.update(self.world_shift)
         self.enemy_collision_reverse()
         self.enemy_sprites.draw(self.display_surface)
+        self.explosion_sprites.update(self.world_shift)
+        self.explosion_sprites.draw(self.display_surface)
 
         # трава
         self.grass_sprites.update(self.world_shift)
@@ -196,4 +248,8 @@ class Level:
         self.goal.update(self.world_shift)
         self.goal.draw(self.display_surface)
 
+        self.check_coin_collisions()
+        self.check_enemy_collisions()
 
+        self.check_death()
+        self.check_win()
