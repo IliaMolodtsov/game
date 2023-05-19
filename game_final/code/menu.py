@@ -35,6 +35,7 @@ class Button:
     def draw(self, x, y, message, action=None, font_size=30):  # делаем собственно кнопку
         global starting
         global read
+        global restarted
         mouse = pygame.mouse.get_pos()  # отслеживаем позицию мыши
         click = pygame.mouse.get_pressed()  # узнаем, нажал ли пользователь на кнопку мыши
 
@@ -52,6 +53,8 @@ class Button:
                     starting = True
                 if message == 'Ok':
                     read = True
+                if message == 'Replay':
+                    restarted = True
         else:
             pygame.draw.rect(screen, self.inactive_color, (x, y, self.width, self.height))
 
@@ -102,3 +105,31 @@ def menu():
 
         pygame.display.update()
         clock.tick(60)
+
+# экран завершения игры
+def game_over():
+    global restarted
+
+    game_over_screen = pygame.image.load('../graphics/screens/menu.jpg').convert_alpha()
+    screen.blit(game_over_screen, (0, 0))
+    print_text('game over', 480, 190, font_color=(255, 255, 255), font_type="../graphics/fonts/Sonic Filled.ttf",
+                font_size=30)
+
+    quit_button = Button(148, 79)
+    restart_button = Button(212, 79)
+
+    restarted = False
+
+    while not restarted:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+        restart_button.draw(498, 250, 'Replay', None, 35)  # указываем координаты кнопки, на посл месте размер шрифта
+        quit_button.draw(526, 400, "Quit", quit, 35)
+
+        pygame.display.update()
+        clock.tick(60)
+
+        if restarted:  # если пользователь нажал на кнопку play, то переменная истинна, а значит, меню исчезает
+            break
